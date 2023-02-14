@@ -1,0 +1,246 @@
+<html>
+	<head>
+		<title> SOAP drawer </title>
+		<link rel="stylesheet" href="./sequence-diagram.css">
+		<link rel="stylesheet" href="./sequence-diagram-columns.css">
+		<style>
+			body {
+				font-family: "Trebuchet MS", sans-serif;
+				background-color: #F8F4F0;
+			}
+
+			table, td, th {
+  			border: 1px solid black;
+			}
+
+			table {
+  		width: 60%;
+  		border-collapse: collapse;
+			}
+
+			.center {
+  		margin-left: auto;
+  		margin-right: auto;
+			}
+
+
+		</style>
+		<script src = "./read_file.js"> </script>
+	</head>
+	<body>
+
+		<h1> SOAP drawer </h1>
+		<input type="file" id="file-input" />
+		<div id="output"></div>
+
+		<script>
+
+			function getSoapActors(soapXmls){
+
+				var actors = new Set();
+
+				for (let xml of soapXmls){
+
+					if(xml.getElementsByTagName("to").length > 0){
+						if (xml.getElementsByTagName("to")[0].childNodes.length > 0){
+
+							var actor = xml.getElementsByTagName("to")[0].childNodes[0].nodeValue
+							actors.add(actor);
+						}
+					}
+
+					if(xml.getElementsByTagName("from").length > 0){
+						if(xml.getElementsByTagName("from")[0].childNodes.length > 0){
+
+							var actor = (xml.getElementsByTagName("from")[0].childNodes[0].nodeValue);
+							actors.add(actor);
+						}
+					}
+				}
+				return Array.from(actors);
+			}
+
+
+			function getSource(soapXml)
+			{
+					if(soapXml.getElementsByTagName("from").length > 0){
+						if(soapXml.getElementsByTagName("from")[0].childNodes.length > 0){
+							return (soapXml.getElementsByTagName("from")[0].childNodes[0].nodeValue);
+						}
+					}
+
+				return null;
+			}
+
+			function getSoapName(soapXml)
+			{
+					var soapBody = soapXml.getElementsByTagName("SOAP-ENV:Body")
+					var txt = soapBody[0].firstElementChild.nodeName
+
+					return txt;
+
+			}
+
+			function getDestinantion(soapXml)
+			{
+					if(soapXml.getElementsByTagName("to").length > 0){
+						if(soapXml.getElementsByTagName("to")[0].childNodes.length > 0){
+							return (soapXml.getElementsByTagName("to")[0].childNodes[0].nodeValue);
+						}
+					}
+
+				return null;
+			}
+
+			function getSoapId(soapXml)
+			{
+					if(soapXml.getElementsByTagName("id").length > 0){
+						if(soapXml.getElementsByTagName("id")[0].childNodes.length > 0){
+							return (soapXml.getElementsByTagName("id")[0].childNodes[0].nodeValue);
+						}
+					}
+
+				return null;
+			}
+
+			function getArrowDirection(sourceNr, destinationNr)
+			{
+				if(sourceNr < destinationNr)
+				{
+					return "right";
+				}
+				return "left"
+			}
+
+			function getMOs(soapXml)
+			{
+				var mos = soapXml.getElementsByTagName("managedObject")
+				var resoult = [];
+
+				for(let mo of mos)
+				{
+					console.log(mo.getAttribute('class'));
+					resoult.push(mo.getAttribute('distName'))
+				}
+				return resoult;
+			}
+
+
+			function generateMosList(mos)
+			{
+					var list ='<p style="font-size:80%;">'
+					for(let mo of mos)
+					{
+						list = list  + mo + '<br>'
+					}
+					list = list + '</p>'
+				return list;
+			}
+
+			function generateTargetedArrow(soapXml, actors, index)
+			{
+				var sourceActor = getSource(soapXml);
+				var destinationActor = getDestinantion(soapXml);
+					
+				var sourceNr = actors.indexOf(sourceActor) + 1;
+				var destiationNr = actors.indexOf(destinationActor) + 1;
+				
+				var soapName = getSoapName(soapXml);
+				var soapID = getSoapId(soapXml);
+				
+				var lineImages = {left: '<svg width="100%" height="14" preserveAspectRatio="xMinYMid slice" viewBox="0 0 1400 14"><polygon points="0,7 15,1 10,6 1400,6 1400,8 10,8 15,13 0,7"/></svg>',
+								  right: '<svg width="100%" height="14" preserveAspectRatio="xMaxYMid slice" viewBox="0 0 1400 14"><polygon points="1400,7 1385,1 1390,6 0,6 0,8 1390,8 1385,13 1400,7"/></svg>'};
+			
+			
+			
+				//var result = '<div class="action left-' + Math.min(sourceNr, destiationNr) + '-' + actors.length + ' right-' + Math.max(sourceNr, destiationNr) + '-' + actors.length
+				//				+ '" id="SoapArrow-' + index + '">' + '<div><table style="margin-left: auto; margin-right: auto;"> <tr><td style="text-align:center;"> <b>Id=' + soapID + ' </td> </b><td style="text-align:center;"> <b>' + soapName
+				//				+ '</b></td></tr><tr><td colspan="2">'+ generateMosList(getMOs(soapXml)) +'</td></tr> </table></div>' + '<div class = "arrow">' + lineImages[getArrowDirection(sourceNr, destiationNr)] + '</div></div>'
+			
+			
+				var result = '<div class="action left-' + Math.min(sourceNr, destiationNr) + '-' + actors.length + ' right-' + Math.max(sourceNr, destiationNr) + '-' + actors.length
+								+ '" id="SoapArrow-' + index + '" onClick=\"openSoapXml(' + index +')"'+'>' + '<div><table style="margin-left: auto; margin-right: auto;"> <tr><td style="text-align:center;"> <b>Id=' + soapID + ' </td> </b><td style="text-align:center;"> <b>' + soapName
+								+ '</b></td></tr><tr><td colspan="2">'+ generateMosList(getMOs(soapXml)) +'</td></tr> </table></div>' + '<div class = "arrow">' + lineImages[getArrowDirection(sourceNr, destiationNr)] + '</div></div>'
+			
+			
+				return result;
+			}
+
+			function generateNonTargetdArrow(soapXml, index)
+			{
+				var lineNone = '<svg width="90%" height="14" preserveAspectRatio="xMinYMid slice" viewBox="0 0 1400 14"><polyline points="0,7 15,1 10,6 1390,6 1385,1 1400,7 1385,13 1390,8 10,8 15,13 0,7"/></svg>'
+				var soapName = getSoapName(soapXml);
+				var soapID = getSoapId(soapXml);
+						
+				var result = ('<div class="action none"' + '" id="SoapArrow-' + index + '">'
+				               + '<div style = "width:60%; margin-left: auto; margin-right: auto;">' 
+							   + '<table style="margin-left: auto; margin-right: auto;"> <tr><td style="text-align:center;"><b> Id=' + soapID + '</b></td> <td style="text-align:center;"><b>' + soapName
+							   + '</b></td></tr><tr><td colspan="2">'+ generateMosList(getMOs(soapXml)) +'</td></tr> </table></div>' + '<div class = "arrow">' + lineNone + '</div></div>')
+			
+				return result;
+			}
+
+			
+			function openSoapXml(soapArrowId)
+			{
+				console.log("test click");
+				//window.open("http://www.onet.pl\\");
+		
+				var newWin = open('','windowName','height=300,width=300');
+				newWin.document.write(soapArrowId);
+			}
+			
+
+			function generateHtml(loaded_file)
+			{
+
+				var soapStrings = getStringBetwenTags(loaded_file, "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">", "</SOAP-ENV:Envelope>")
+				var soapXmls = convertStringsToXmls(soapStrings);
+				var actors = getSoapActors(soapXmls);
+
+				var html = ['<div class="sequence-diagram-layout">'];
+				html.push('\t<div class="header">');
+
+
+				for(let actor_nr in actors)
+				{
+					html.push('\t\t<div class="entity col-' + (parseInt(actor_nr) + 1) + '-' + actors.length + '">' + actors[actor_nr] + '</div>');
+				}
+
+				html.push('\t</div>');
+				//--------------------------------------body----------------------------
+				html.push('\t<div class="body">');
+
+
+				for(let actor_nr in actors)
+				{
+					html.push('\t\t<div class="line left-' + (parseInt(actor_nr) + 1) + '-' + actors.length + '">' + '</div>');
+				}
+
+				for(let index in soapXmls)
+				{
+					console.log(index);
+					var sourceActor = getSource(soapXmls[index])
+					var destinationActor = getDestinantion(soapXmls[index])
+
+					if(sourceActor != null && destinationActor != null)
+					{
+						html.push('\t\t' + generateTargetedArrow(soapXmls[index], actors, index));
+					}else
+					{
+						html.push('\t\t' + generateNonTargetdArrow(soapXmls[index], index));
+					}
+				}
+
+				html.push('</div>');
+				console.log(html.join('\n'));
+				return html.join('\n');
+			}
+
+			document.getElementById('file-input').addEventListener('change', readSingleFile, false);
+			console.log("siema elo");
+
+		</script>
+
+	</body>
+</html>
